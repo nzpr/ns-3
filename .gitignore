@@ -1,0 +1,6 @@
+nsc-0.5.2/.sconf_temp
+nsc-0.5.2/config.log
+*.pyc
+.waf*
+.lock*
+build/
