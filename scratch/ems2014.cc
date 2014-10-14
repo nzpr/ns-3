@@ -29,7 +29,7 @@ public:
   Simulation()
   {
     nWifis                    = 100;
-    nSinks                    = 1;
+    nSources                    = 1;
     TotalTime                 = 150;
     dataPort                  = 9;
     control_port              = 776;
@@ -40,7 +40,8 @@ public:
     maxNodeSpeed              = 0.00001;
     txp                       = 7.5;
     macMode                   = "DsssRate11Mbps";
-    showTime                  = true;    
+    collectMetadata           = false;
+    showMemory                  = true;    
   }
 
   uint32_t                                                                                                          
@@ -57,17 +58,15 @@ public:
   GetArgs(int argc, char *argv[])
   {
     CommandLine cmd;   
-    cmd.AddValue ("showTime", "Вывод в консоль текущего времени симуляции "
-        "[bool, по умолчанию 1]", showTime);
-    cmd.AddValue ("nWifis", "Число узлов в сети "
+    cmd.AddValue ("showMemory", "Show memory consumption"
+        "[bool, по умолчанию 1]", showMemory);
+    cmd.AddValue ("nWifis", "Number of nodes in the network"
         "[по умолчанию 100]", nWifis);
-    cmd.AddValue ("nSinks", "Число потоков с данными "
-        "[по умолчанию 1]", nSinks);    
+    cmd.AddValue ("nSources", "Number of traffic sources"
+        "[по умолчанию 1]", nSources);    
+    cmd.AddValue ("collectMetadata", "Install FlowMonitor to collect traffic statictics"
+        "[default false]", collectMetadata);    
     cmd.Parse (argc, argv);   
-    if (nWifis>16384)
-      {
-        NS_FATAL_ERROR("Адресация позволяет симулировать не более 16384 узлов");
-      }
   } 
 
   int
@@ -86,7 +85,7 @@ public:
   void
   InitNetwork()
   {
-    if (showTime == true) ShowTime();
+    if (showMemory == true) ShowMemory();
     adhocNodes.Create (nWifis);    
     WifiHelper wifi;    
     wifi.SetStandard (WIFI_PHY_STANDARD_80211g);        
@@ -167,6 +166,9 @@ public:
     ApplicationContainer temp = onoff1.Install (adhocNodes.Get (nWifis-1));        
     temp.Start (Seconds(0));        
     temp.Stop (Seconds (TotalTime));
+
+    if(collectMetadata)
+         fm = flowmonHelper.InstallAll();
    }  
 
 
@@ -194,12 +196,12 @@ public:
     }
 
   void
-  ShowTime()
+  ShowMemory()
   {
     double now = Simulator::Now ().GetSeconds (); 
     NS_LOG_UNCOND ("Memory consumption: " << getValue() << " kbytes");
-    void (Simulation::*printTime)() = &Simulation::ShowTime;
-    Simulator::Schedule (Seconds (1), printTime, this);
+    void (Simulation::*printMemory)() = &Simulation::ShowMemory;
+    Simulator::Schedule (Seconds (1), printMemory, this);
   }  
  
 
@@ -212,10 +214,11 @@ private:
   double minNodeSpeed;    
   double maxNodeSpeed;    
   double txp;             
+  bool collectMetadata;             
   std::string dataRate;   
   std::string macMode;        
-  bool showTime;            
-  int nSinks;  
+  bool showMemory;            
+  int nSources;  
   NodeContainer adhocNodes;       
   Ipv4ListRoutingHelper list;     
   NetDeviceContainer adhocDevices;
